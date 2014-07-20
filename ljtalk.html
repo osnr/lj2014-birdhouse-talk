@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Functional reactive Twitter bots</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      body {
+        font-family: 'Minion Pro', serif;
+      }
+      h1, h2, h3, h4 {
+        font-family: 'Helvetica Neue', sans-serif;
+        font-weight: bold;
+      }
+      .remark-slide-content {
+        font-size: 24px;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Source Code Pro', monospace; }
+      .remark-slide-content img {
+        max-width: 800px;
+        max-height: 400px;
+      }
+    </style>
+    <script src="elm-runtime.js"></script>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Functional reactive<br>Twitter bots
+#### Omar Rizwan<br>July 22, 2014 at LambdaJam Chicago
+
+---
+
+# Signals
+
+- What is a Signal?
+
+---
+
+# Signals
+
+- What is a Signal?
+  - A Signal is a time-varying value.
+
+---
+
+# Signals
+
+- Suppose we have `Mouse.position` of type<br>`Signal (Int, Int)`.
+
+---
+
+# Signals
+
+- Suppose we have `Mouse.position` of type<br>`Signal (Int, Int)`.
+- We can also see `Mouse.position` as a *function* from<br>`Time -> (Int, Int)`.
+
+---
+
+# Signals
+
+- Suppose we have `Mouse.position` of type<br>`Signal (Int, Int)`.
+- We can also see `Mouse.position` as a *function* from<br>`Time -> (Int, Int)`.
+- At a certain time, `Mouse.position` gives us a certain value:
+<div id="mouse-position"></div>
+
+---
+
+# Operating on Signals
+
+- One other way to see a Signal, in Elm, is as a *stream of events*.
+
+---
+
+# Operating on Signals
+
+- Like a list that extends into the future:
+<div id="mouse-position-stream"></div>
+
+---
+
+# What does this have to do with Twitter?
+
+.center[![Counter bot](images/counter-bot.png)]
+
+---
+
+# Twitter feeds are like Signals!
+
+- Represent an individual tweet as a value of type<br>
+`StatusUpdate {}`
+- Then we'll represent a Twitter feed as<br>
+`Signal (StatusUpdate {})`
+
+---
+
+# The Counter bot
+
+- Generate a Signal of status updates
+
+---
+
+# The Counter bot
+
+- Generate a Signal of status updates
+- Each status update has the previous update's number + 1
+
+---
+
+# What are our tools?
+
+---
+
+# Starting with a primitive Signal
+
+- The `every` function
+.center[![Every](images/every.png)]
+
+- Pass it a `Time` to get the Signal we'll start with
+.doc.center[![Times](images/times.png)]
+
+---
+
+# Starting with a primitive Signal
+
+- We want a Signal that changes every 10 seconds,<br>
+`every (10 * second)`
+
+- It looks like this (sped up):
+
+
+---
+
+# Transforming<br>`every (10 * second)`
+
+- The `count` function
+.center[]
+
+---
+
+# Seeing the Signal pipeline
+
+---
+
+# A more complex bot:<br>@EveryMNLake
+
+---
+
+# A more complex bot:<br>@EveryMNLake
+
+---
+
+# Problems
+
+---
+
+# Combinators
+
+---
+
+# Problems
+
+---
+
+# Thanks!
+
+- @rsnous
+- https://github.com/osnr/Birdhouse
+
+    </textarea>
+    <script src="remark-latest.min.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+      var slideshow = remark.create({
+        ratio: '16:9',
+        navigation: { scroll: false }
+      });
+    </script>
+
+    <style>
+      #mouse-position {
+        width: 200px;
+        height: 200px;
+        border: 1px solid blue;
+      }
+
+      #mouse-position-stream {
+        width: 80%;
+        height: 400px;
+        border: 1px solid blue;
+        overflow: auto;
+      }
+
+      .doc img {
+        width: 180px;
+      }
+    </style>
+
+    <script src="build/MousePosition.js"></script>
+    <script>
+        Elm.embed(Elm.MousePosition, document.getElementById("mouse-position"));
+    </script>
+
+    <script src="build/MousePositionStream.js"></script>
+    <script>
+        Elm.embed(Elm.MousePositionStream, document.getElementById("mouse-position-stream"));
+    </script>
+  </body>
+</html>
