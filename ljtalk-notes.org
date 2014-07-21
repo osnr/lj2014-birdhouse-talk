@@ -1,0 +1,72 @@
+
+* What does *this* have to do with functional programming?
+
+What does Twitter have to do with functional programming?
+
+* Signals
+
+I want to quickly talk about Elm's functional reactive programming model.
+
+We should start with the concept of a signal.
+What is a signal?
+
+* Signals
+It's a time-varying value.
+Let me give you a concrete example.
+
+* Signals
+One Signal that is part of the Elm standard library is `Mouse.position`.
+
+Elm is a statically typed language, like Haskell or ML, and the type of Mouse.position is Signal (Int, Int). That is, it's a Signal of Int-pairs, much like we might have a list of Int-pairs.
+
+* Signals
+One way to view this signal is that it's a function from Time to Int pair.
+
+* Signals
+So at a certain time, if you peeked into the Signal, you would see a value -- where the mouse pointer is at that time. And the mouse pointer can be in different places at different times.
+
+I have a little viewport into an Elm program here, and it will just tell us what the value inside Mouse.position is as I move the mouse around.
+
+DO DEMO
+
+Note that I'm saying the value inside, not the value of. Elm is a pure language in the same sense that Haskell is a pure language, and the name `Mouse.position` always refers the same value. That value is a signal. Mouse.position is not simply a mutable variable which refers to different values at different times.
+
+ The value *inside* the signal can change, but we don't have a name for that, so it doesn't break purity.
+
+* Operating on Signals
+Signals in Elm are really a stream of discrete events, rather than a continuous function. So we'll be thinking that way for the rest of the talk.
+
+* Operating on Signals
+Going back to the Mouse.position example, let's look at it like a stream. It's sort of like a list that extends into the future, right?
+
+DO DEMO
+
+So we have this stream of individual mouse positions, and as I move the mouse new positions stream in.
+
+* Operating on Signals: lifting
+We've mainly talked about the values inside the Signal, but of course the signal itself is a value. And we can do operations to a Signal to transform it into another Signal.
+
+In the same way that we can map a function over a list, we can map a function over a Signal, too, using the lift function in Elm.
+
+* Operating on Signals: lifting
+So I have an example here. The left column will show you the value of the Mouse.isDown signal -- which is simply whether the mouse button is down or not. The right column will show you what happens when we map `not` over the signal; we'll get whether the mouse button is up or not.
+
+* What does this have to do with Twitter?
+Now that we know about Signals, it seems like a Twitter feed is a good fit for this model.
+
+* Twitter feeds are like Signals!
+Just like the Signals we saw, it's a stream of discrete events.
+
+So I wrote a library that lets you treat Twitter feeds, both incoming ones from other people, and an outgoing one for your bot, as Signals.
+
+Let's start by writing that Counter bot.
+
+We represent each tweet we want to send out as this StatusUpdate thing, which contains the tweet text, maybe the location, whatever else you'd tweet.
+
+And then we represent the stream of all the tweets we send over the bot's lifetime as a Signal of status updates.
+
+* The Counter bot
+The library looks in this updates port for the tweets that it'll send out.
+
+So to make this bot work, we need to come up with a value of that type Signal StatusUpdate, and we want the StatusUpdates inside the Signal to count up from 1.
+
