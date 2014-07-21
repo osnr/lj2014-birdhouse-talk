@@ -66,7 +66,69 @@ We represent each tweet we want to send out as this StatusUpdate thing, which co
 And then we represent the stream of all the tweets we send over the bot's lifetime as a Signal of status updates.
 
 * The Counter bot
-The library looks in this updates port for the tweets that it'll send out.
+So here's some Elm code.
 
-So to make this bot work, we need to come up with a value of that type Signal StatusUpdate, and we want the StatusUpdates inside the Signal to count up from 1.
+The library I wrote, Birdhouse, looks in this updates port of our program for the tweets that it'll send out to the Twitter API.
+
+So to make this bot work, we need to fill in this hole. We need to come up with a value of that type Signal StatusUpdate, and we want the StatusUpdates inside the Signal to count up from 1.
+
+* The counter bot
+Yup.
+
+* What are our tools?
+OK, what've we got. 
+
+Elm's standard library gives us a bunch of built-in Signals, like Mouse.position and Mouse.isDown. We'll start there, and we'll transform and manipulate them until we have the counting Signal we want.
+
+* Starting with a primitive Signal: a tick
+Different Signals have different event paces. We'll want to start with a Signal that goes at the pace we want, and then add the counting information to it later.
+
+Elm has a built-in function called `every` which just gives you the time, and you can tell it to tick every so often. We'll give it an interval of 1 second by passing it the value `second`.
+
+* Starting with a primitive Signal: a tick
+Now we have this Signal that we got from calling `every second`. 
+
+It looks like this:
+DO DEMO
+
+So we're getting new values at the right pace. 
+But the values themselves aren't the counting that we want.
+
+* Transforming `every second`: ticks to counting
+We need to make the Signal just be the count of the number of times it's updated so far. In other words, we want it to count up every second.
+
+Elm gives us the `count` function that will turn any Signal into just that: a count of the number of times it's updated.
+
+* Transforming `every second`: ticks to counting
+So we've built up `count (every second)`:
+
+DO DEMO
+
+* Transforming `count (every second)`: counting to tweets
+Finally, we want to turn this counting into tweets. We want to turn each Int into a StatusUpdate that the library can tweet out.
+
+* Transforming `count (every second)`: counting to tweets
+First, we have to make each value into a String, because tweets are made of text.
+
+We'll lift the show function to turn our Ints inside the stream into Strings.
+
+* Transforming `count (every second)`: counting to tweets
+Now that we have Strings, we can lift the update function and use it to turn this Signal of Strings into a Signal of status updates.
+
+* Our final Signal
+So we finally have a Signal we can send out to the library for tweeting.
+
+Here's the whole expression, read it from the inside out:
+- first we tick every second
+- then we count how many ticks we've had
+- then we turn the counts into text
+- then we turn the text into tweets
+- then finally, the library looks at the signal we've named 'updates' and tweets out each status update
+
+* Our final Signal
+And here's the same thing, expressed with some more concise operators. We count up every second and feed that into the composition of update and show.
+
+* Counter second graph
+This is a graph of the data flow; you can see the value of the Signal at each stage of the transformation pipeline.
+
 

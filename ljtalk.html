@@ -187,7 +187,7 @@ port updates : Signal (BH.StatusUpdate {})
 
 ---
 
-# Transforming<br>`count (every second)`:<br>counting to counting tweets
+# Transforming `count (every second)`:<br>counting to tweets
 
 - Now we want to turn those counts from `count (every second)` into tweets.
 - First, lift the `show` function to turn the counts into Strings:
@@ -200,7 +200,7 @@ lift show : Signal a -> Signal String
 
 ---
 
-# Transforming<br>`count (every second)`:<br>counting to counting tweets
+# Transforming `count (every second)`:<br>counting to tweets
 
 - Now we want to turn those counts from `count (every second)` into tweets.
 - Then, lift the `update` function from the Birdhouse library:
@@ -238,6 +238,10 @@ port updates : Signal (BH.StatusUpdate {})
 ```
 
 ---
+
+```scala
+*port updates = BH.update . show <~ count (every second)
+```
 
 <div id="counter-second-graph"></div>
 
@@ -325,7 +329,7 @@ port updates : Signal (BH.StatusUpdate {})
         width: 800px;
         height: 300px;
         margin-top: 20px;
-        transform: scale(1.5);
+        transform: scale(1.3);
       }
     </style>
 
