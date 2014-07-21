@@ -19,6 +19,8 @@
         max-width: 800px;
         max-height: 400px;
       }
+
+      h1.smaller { font-size: 50px; }
     </style>
     <script src="elm-runtime.js"></script>
   </head>
@@ -43,11 +45,8 @@ July 22, 2014 at LambdaJam Chicago
 
 - What is a Signal?
 
----
+--
 
-# Signals
-
-- What is a Signal?
   - A Signal is a time-varying value.
 
 ---
@@ -56,21 +55,11 @@ July 22, 2014 at LambdaJam Chicago
 
 - Suppose we have `Mouse.position` of type<br>`Signal (Int, Int)`.
 
----
-
-# Signals
-
-- Suppose we have `Mouse.position` of type<br>`Signal (Int, Int)`.
+--
 
 - We can see `Mouse.position` as a *function* from<br>`Time -> (Int, Int)`.
 
----
-
-# Signals
-
-- Suppose we have `Mouse.position` of type<br>`Signal (Int, Int)`.
-
-- We can also see `Mouse.position` as a *function* from<br>`Time -> (Int, Int)`.
+--
 
 - At a certain time, `Mouse.position` gives us a certain value:
 <div id="mouse-position"></div>
@@ -103,7 +92,7 @@ July 22, 2014 at LambdaJam Chicago
 
 # Operating on Signals: lifting
 
-<div id="lifting"></div>
+<div class="center-lifting"><div id="lifting"></div></div>
 
 ---
 
@@ -117,6 +106,8 @@ July 22, 2014 at LambdaJam Chicago
 
 - Represent an individual tweet as a value of type<br>
 `StatusUpdate {}`
+
+--
 
 - Then we'll represent a Twitter feed as<br>
 `Signal (StatusUpdate {})`
@@ -187,7 +178,7 @@ port updates : Signal (BH.StatusUpdate {})
 
 ---
 
-# Transforming `count (every second)`:<br>counting to tweets
+<h1 class="smaller">Transforming <code>count (every second)</code>:<br>counting to tweets</h1>
 
 - Now we want to turn those counts from `count (every second)` into tweets.
 - First, lift the `show` function to turn the counts into Strings:
@@ -200,7 +191,7 @@ lift show : Signal a -> Signal String
 
 ---
 
-# Transforming `count (every second)`:<br>counting to tweets
+<h1 class="smaller">Transforming <code>count (every second)</code>:<br>counting to tweets</h1>
 
 - Now we want to turn those counts from `count (every second)` into tweets.
 - Then, lift the `update` function from the Birdhouse library:
@@ -247,23 +238,100 @@ port updates : Signal (BH.StatusUpdate {})
 
 ---
 
-# A more complex bot:<br>@EveryMNLake
+# A more complex bot: @EveryMNLake
+
+.center[![EveryMNLake](images/EveryMNLake.png)]
 
 ---
 
-# A more complex bot:<br>@EveryMNLake
+# A more complex bot: @EveryMNLake
+
+```scala
+port updates = lakesJsonSigResp
+             |> lift U.respToMaybe
+             |> lift (U.concatMap Json.fromString)
+             |> lift (U.map toLakes)
+             |> lift (U.map <| map toGeoUpdate . drop pos . fst . PureRandom.shuffle seed)
+             |> U.extract []
+             |> U.spool (every <| 3 * hour)
+```
 
 ---
 
-# Problems
+# A more complex bot: @EveryMNLake
+
+<pre class="remark-code hljs">
+port updates = lakesJsonSigResp
+             <span class="hljs-annotation">: Signal (Http.Response String)</span>
+             |> lift U.respToMaybe
+             <span class="hljs-annotation">: Signal (Maybe String)</span>
+             |> lift (U.concatMap Json.fromString)
+             <span class="hljs-annotation">: Signal (Maybe Json.Value)</span>
+             |> lift (U.map toLakes)
+             <span class="hljs-annotation">: Signal (Maybe [Lake])</span>
+             |> lift (U.map <| map toGeoUpdate . drop pos . fst . PureRandom.shuffle seed)
+             <span class="hljs-annotation">: Signal (Maybe [GeoUpdate (StatusUpdate {})])</span>
+             |> U.extract []
+             <span class="hljs-annotation">: Signal [GeoUpdate (StatusUpdate {})]</span>
+             |> U.spool (every <| 3 * hour)
+             <span class="hljs-annotation">: Signal (GeoUpdate (StatusUpdate {}))</span>
+</pre>
+
+---
+
+# A more complex bot: @EveryMNLake
+
+<pre class="remark-code hljs">
+port updates = lakesJsonSigResp              <span class="hljs-literal">Http.Success "[{\"county\":\"Douglas\",\"si..."</span>
+  <span class="hljs-annotation">: Signal (Http.Response String)</span>
+  |> lift U.respToMaybe                      <span class="hljs-literal">Just "[{\"county\":\"Douglas\",\"si..."</span>
+  <span class="hljs-annotation">: Signal (Maybe String)</span>
+  |> lift (U.concatMap Json.fromString)      <span class="hljs-literal">Just (Json.Array [Json.Object {"county": "Do.."}])</span>
+  <span class="hljs-annotation">: Signal (Maybe Json.Value)</span>
+  |> lift (U.map toLakes)                    <span class="hljs-literal">Just [{ name = "Aaron", loc = { lat = 46.07... } }]</span>
+  <span class="hljs-annotation">: Signal (Maybe [Lake])</span>
+  |> lift (U.map <| map toGeoUpdate . drop pos . fst .
+                    PureRandom.shuffle seed) <span class="hljs-literal">Just [{ status = "Lake Elbow", lat = 49.29... }]</span>
+  <span class="hljs-annotation">: Signal (Maybe [GeoUpdate (StatusUpdate {})])</span>
+  |> U.extract []                            <span class="hljs-literal">[{ status = "Lake Elbow", lat = 49.29... }]</span>
+  <span class="hljs-annotation">: Signal [GeoUpdate (StatusUpdate {})]</span>
+  |> U.spool (every <| 3 * hour)             <span class="hljs-literal">{ status = "Lake Elbow", lat = 49.29... }</span>
+  <span class="hljs-annotation">: Signal (GeoUpdate (StatusUpdate {}))</span>
+</pre>
+
+---
+
+# A more complex bot: @EveryMNLake
+
+.center[![EveryMNLake](images/EveryMNLake-only.png)]
 
 ---
 
 # Combinators
 
+- Other people's tweet:<br>
+`Tweet`
+
+--
+
+- Other people's Twitter feeds:<br>
+`Signal (Maybe Tweet)`
+
 ---
 
-# Problems
+# Combinators
+
+TWITTER
+
+COUNTER1    COUNTER2
+
+---
+
+# Combinators
+
+TWITTER
+
+EVERY COLOR     EVERY NAMED COLOR
 
 ---
 
@@ -300,9 +368,13 @@ port updates : Signal (BH.StatusUpdate {})
         width: 180px;
       }
 
+      .center-lifting {
+        width: 100%;
+      }
       #lifting {
         width: 700px;
         height: 300px;
+        margin: 0 auto;
         border: 1px solid blue;
         overflow: auto;
       }

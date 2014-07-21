@@ -63,6 +63,7 @@ Let's start by writing that Counter bot.
 
 We represent each tweet we want to send out as this StatusUpdate thing, which contains the tweet text, maybe the location, whatever else you'd tweet.
 
+* Twitter feeds are like Signals!
 And then we represent the stream of all the tweets we send over the bot's lifetime as a Signal of status updates.
 
 * The Counter bot
@@ -131,4 +132,49 @@ And here's the same thing, expressed with some more concise operators. We count 
 * Counter second graph
 This is a graph of the data flow; you can see the value of the Signal at each stage of the transformation pipeline.
 
+* A more complex bot: @EveryMNLake
+Now I want to quickly cover a little bit more complex bot.
 
+Every Minnesota Lake is a bot which draws on some knowledge about the world -- which I gleaned from Wikipedia and put into a file -- and then tweets it out. It tweets out a random lake in Minnesota every couple of hours.
+
+(Minnesota has a lot of lakes.)
+
+* A more complex bot: @EveryMNLake
+It's been tweeting for a few months now and will hopefully keep it up until we run out of lakes.
+
+So here's the main part of the code we care about: the signal of status updates. It's a little bit more complicated, but it's the same basic principle.
+
+We start out with a different signal this time, one which contains the information we want but goes at the wrong pace. This is one of the weird things about Elm -- everything is a Signal, and you can't have Signals of Signals, so you end up having to do weird unintuitive things with multiplexing different sources of information.
+
+* A more complex bot: @EveryMNLake
+So we have this Signal which I defined somewhere else, lakesJsonSigResp, and it's the return value of an HTTP request to get our information. There's a JSON string in there.
+- Then we turn that Http response indicator into a more generic Maybe value so it's easier to deal with. from now on we'll be wrapping most of our operations with U.map so they'll happen to whatever is inside the Maybe.
+- Then we run the JSON parser and get an abstract syntax tree for the JSON.
+- Then we convert the JSON value into an array of our own Lake data.
+- Then we do a bunch of things at once. We shuffle the list of lakes, we throw away the random number generator, we drop whatever's before a position we defined somewhere else in the file, and then we convert the lakes into tweets containing the lakes' locations with toGeoUpdate.
+- Then if the Maybe is actually Nothing, like if the HTTP request failed or if the JSON didn't parse or something, we replace the Nothing with an empty list of tweets, and if it is Something then we just pull it out, so it's a signal of a list instead of a signal of a maybe list.
+- Finally we do something I call spool: we use a different signal, one that ticks every 3 hours, and we spool out the list of tweets using that ticker so that we get one tweet every 3 hours.
+And then that's Signal, one random lake every  3 hours, is the value of updates, and
+
+* A more complex bot: @EveryMNLakes
+that's what the bot tweets.
+
+Thus far, we've only seen bots that tweet things out of nothing. We haven't seen anything that uses external Twitter streams as sources of information.
+
+We've mapped and folded over Elm's built-in signals and turned them into Twitter bots, but we haven't mapped and folded over existing *Twitter* feeds to make our Twitter bot.
+
+* Combinators
+
+So let's introduce a new interface for reading other people's Twitter feeds.
+
+I've introduced this type Tweet, which contains a status, date posted, number of times favorited, atttached images, and so on and so forth, which we get from Twitter. It represents a tweet an account has already posted (as opposed to StatusUpdate which is something we are going to post).
+
+And this type Signal (Maybe Tweet) which represents an entire Twitter feed of an account from the time we start the program, on. The value inside the signal at some time is the account's latest tweet at that time.
+
+You may be wondering why we need this Maybe in there. 
+
+The answer is in another quirk of Elm's model. Signals need to be defined at all times from the beginning of the program on. When we start our program, we may want to listen to a Twitter account that hasn't tweeted yet, for instance. Then at time 0, there will be nothing in that Signal. We want to represent that in the type, so we make it a Signal of Maybe Tweets -- someone's latest tweet could be nothing, or it could be a tweet.
+
+* Combinators
+
+One example of usage.
