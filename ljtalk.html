@@ -348,6 +348,14 @@ port updates = BH.map (\s -> show <| maybe 0 (\x -> x * 2) <| String.toInt s)
 
 # Combinators: x y -> (x, y)
 
+```scala
+port updates = (\mc mctt ->
+                  case (mc, mctt) of
+                    (Just c, Just ct) -> Just { status = "(" ++ c.status ++ ", " ++ ct.status ++ ")" }
+                    otherwise -> Nothing)
+               <~ BH.toUpdates counter ~ BH.toUpdates counterTimesTwo 
+```
+
 <table class="three-column">
 <tr>
 <td>
@@ -367,6 +375,12 @@ port updates = BH.map (\s -> show <| maybe 0 (\x -> x * 2) <| String.toInt s)
 ---
 
 # Combinators: x acc -> x + acc
+
+```scala
+port updates = lift (BH.update . show)
+               <| BH.fold (\s acc -> maybe 0 (\x -> x + acc) <| String.toInt s) 0
+               <| BH.toUpdates counter
+```
 
 <div class="left-column">
 <iframe scrolling="no" src="embeds/CounterElm.html"></iframe>

@@ -1,64 +1,70 @@
+
+* 1 Title slide
 Hi! I'm Omar, and I'm here to talk to you about Twitter bots and functional reactive programming in Elm.
 
-* What does *this* have to do with functional programming?
+* 2 What does *this* have to do with functional programming?
 
 What does this Twitter feed have to do with functional programming?
 
-* Signals
+* 3 Signals
 To answer this question, I'll talk about Elm's functional reactive programming model.
 
 We should start with the concept of a signal.
 What is a signal?
 
-* Signals
+* 4 Signals
 It's a time-varying value.
 Let me give you a concrete example.
 
-* Signals
+* 5 Signals
 One Signal that is part of the Elm standard library is `Mouse.position`.
 
 So Elm is a statically typed language, like Haskell or ML, and the type of Mouse.position is Signal (Int, Int). That is, it's a Signal of Int-pairs, much like we might have a list of Int-pairs.
 
-* Signals
+* 6 Signals
 One way to view this signal is that it's a function from some Time to Int pair.
 
-* Signals
+* 7 Signals
 So at a certain time, if you peeked into the Signal, you would see a value -- where the mouse pointer happens to be at that time. DO DEMO. And the mouse pointer can be in different places at different times.
 
 So this is a little viewport into an Elm program here, and it will just tell us what the value inside Mouse.position is as I move the mouse around.
 
-Note that I'm saying the value inside, not the value of Mouse.position. Elm is a pure language in the same sense that Haskell is a pure language, which means the name `Mouse.position` always refers to the same value. That value is a signal, not an int pair.
+Note that I'm saying the value inside Mouse.position, not the value of Mouse.position. Elm is a pure language in the same sense that Haskell is a pure language, which means the name `Mouse.position` always refers to the same value. That value is a signal, not an int pair.
 
 Mouse.position is not simply a mutable variable which refers to different values at different times.
 
 The value *inside* the signal can change, but we don't have a name for that value, so it doesn't break purity.
 
-* Operating on Signals
+* 8 Operating on Signals
 Another way to see a signal is as a stream of discrete events, rather than as a continuous function, and this is how they really work in Elm anyway. So we'll be thinking that way for the rest of the talk.
 
-* Operating on Signals
+* 9 Operating on Signals
 Going back to the Mouse.position example, let's look at it like a stream. It's sort of like a list that extends into the future, right?
 
 DO DEMO
 
 So we have this stream of individual mouse positions, and as I move the mouse new positions stream in.
 
-* Operating on Signals: lifting
-We've mainly talked about the values inside the Signal, but of course the signal itself is a value. And we can do operations to a Signal to transform it into another Signal.
+* 10 Operating on Signals: lifting
+We've mainly talked about the values inside the Signal, but because the signal itself is a value. And we can do operations to a Signal to transform it into another Signal.
 
 In the same way that we can map a function over a list, we can map a function over a Signal, too, using the lift function in Elm.
 
-* Operating on Signals: lifting
+* 11 Operating on Signals: lifting
 So I have an example here.
 The left column will show you the value of the Mouse.isDown signal -- which is simply whether the mouse button is down or not.
 The right column will show you what happens when we map `not` over the signal; we'll get whether the mouse button is up or not.
 
-* What does this have to do with Twitter?
+So both of these are Signals, but the one on the right is a transformed version of the one on the left.
+
+* 12 What does this have to do with Twitter?
 Now that we know about Signals, it seems like a Twitter feed is a really good fit for this model.
 
 Just like the Signals we saw, it's a stream of discrete events.
 
-* Twitter feeds are like Signals!
+Each tweet with a count here is an event.
+
+* 13 Twitter feeds are like Signals!
 
 So I wrote a library that lets you treat Twitter feeds, both incoming ones from other people, and an outgoing one for your bot, as Signals.
 
@@ -66,30 +72,32 @@ Let's start by writing that Counter bot. (back and forth)
 
 We represent each tweet we want to send out as this StatusUpdate thing, which contains the tweet text, maybe the location, whatever else you'd tweet.
 
-* Twitter feeds are like Signals!
+* 14 Twitter feeds are like Signals!
 And then we represent the stream of all the tweets we send over the bot's lifetime as a Signal of status updates. So at a given time, the latest thing you sent is the value inside the Signal.
 
-* The Counter bot
+* 15 The Counter bot
 So here's some Elm code.
 
-The library I wrote, Birdhouse, looks in this updates port of our program for the tweets that it'll send out to the Twitter API.
+The library I wrote, which I call Birdhouse, looks in this updates port of our program for the tweets that it'll send out to the Twitter API.
 
-So to make this bot work, we need to fill in this hole. We need to come up with a value of that type Signal StatusUpdate such that the StatusUpdates inside the Signal to count up from 1.
+So to make this bot work, we need to fill in this hole. We need to come up with a value of that type Signal StatusUpdate and we want each status update to count up.
 
-* The counter bot
+* 16 The counter bot
 Yup.
 
-* What are our tools?
+* 17 What are our tools?
 OK, what've we got. 
 
 Elm's standard library gives us a bunch of built-in Signals, such as Mouse.position and Mouse.isDown that we saw. We'll start there, and we'll transform and manipulate them until we have the counting Signal we want.
 
-* Starting with a primitive Signal: a tick
-Different Signals have different event paces. We'll want to start with a Signal that goes at the pace we want, and then add the counting information to it later.
+* 18 Starting with a primitive Signal: a tick
+One thing we didn't talk about is how often we want to tweet.
 
-Elm has a built-in function called `every` which just gives you the time, and you can tell it to tick every so often. We'll give it an interval of 1 second by passing it the value `second`.
+We'll want to start with a Signal that goes at the pace we want, and then add the counting information to it later.
 
-* Starting with a primitive Signal: a tick
+Elm has a built-in function called `every` which takes some time interval and generates a ticking signal at that interval. We'll give it an interval of 1 second by passing it the value `second`.
+
+* 19 Starting with a primitive Signal: a tick
 Now we have this Signal that we got from calling `every second`. 
 
 It looks like this:
@@ -98,30 +106,30 @@ DO DEMO
 So we're getting new values at the right pace. 
 But the values themselves aren't the counting that we want, they're these timestamps.
 
-* Transforming `every second`: ticks to counting
+* 20 Transforming `every second`: ticks to counting
 We need to make each event just count the number of times the Signal has updated so far. In other words, we want it to count up by one every second.
 
 Elm gives us the `count` function that will just turn any Signal into exactly that: a count of the number of times it's updated.
 
-* Transforming `every second`: ticks to counting
+* 21 Transforming `every second`: ticks to counting
 So we've built up `count (every second)`:
 
 DO DEMO
 
 You can see `every second` on the left, with the timestamps, and count every second on the right. THey have the same pace, but the events are counts on the right side.
 
-* Transforming `count (every second)`: counting to tweets
+* 22 Transforming `count (every second)`: counting to tweets
 Finally, we want to turn this counting into tweets. We want to turn each Int into a StatusUpdate that the library can tweet out.
 
-* Transforming `count (every second)`: counting to tweets
+* 23 Transforming `count (every second)`: counting to tweets
 First, we have to make each value into a String, because tweets are made of text, not of ints.
 
 We'll lift the show function to turn our Signal of Ints into a Signal of Strings.
 
-* Transforming `count (every second)`: counting to tweets
+* 24 Transforming `count (every second)`: counting to tweets
 Now that we have Strings, we can lift the update function and use it to turn this Signal of Strings into a Signal of status updates.
 
-* Our final Signal
+* 25 Our final Signal
 So we finally have a Signal we can send out to the library for tweeting.
 
 Here's the whole expression, read it from the inside out:
@@ -131,13 +139,13 @@ Here's the whole expression, read it from the inside out:
 - then we turn the text into tweets
 - then finally, the library looks at the signal we've named 'updates' and tweets out each status update
 
-* Our final Signal
+* 26 Our final Signal
 And here's the same thing, expressed with some more concise operators. We count up every second and feed that into the function composition of update and show.
 
-* Counter second graph
+* 27 Counter second graph
 This is a graph of the data flow; you can see the latest value inside the Signal at each stage of the transformation pipeline.
 
-* A more complex bot: @EveryMNLake
+* 28 A more complex bot: @EveryMNLake
 Now I want to quickly cover a little bit more complex bot.
 
 Every Minnesota Lake is a bot which draws on some knowledge about the world -- which I gleaned from Wikipedia and put into a JSON file -- and then tweets it out. It tweets out a random lake from this list of lakes in Minnesota every couple of hours.
@@ -146,31 +154,32 @@ Every Minnesota Lake is a bot which draws on some knowledge about the world -- w
 
 It's been tweeting for a few months now and will hopefully keep it up until we run out of lakes. You can follow it on Twitter if you want.
 
-* A more complex bot: @EveryMNLake
+* 29 A more complex bot: @EveryMNLake
 So here's the main part of the code we care about: the signal of status updates. It's a little bit more complicated, but it's the same basic principle.
 
 We start out with a different signal this time, this lakesJsonSIgResp which contains the information we want, the lakes, but goes at the wrong pace. This is one of the weird things about Elm -- everything is a Signal, and you can't have Signals of Signals, so you end up having to do weird unintuitive things with multiplexing different sources of information.
 
-* A more complex bot: @EveryMNLake
+* 30 A more complex bot: @EveryMNLake
 So we have this Signal which I defined somewhere else in the program, lakesJsonSigResp, and it's the return value of an HTTP request to get our lakes data. 
 
-* A more complex bot: @EveryMNLake
+* 31 A more complex bot: @EveryMNLake
 There's a JSON string in there, if the request succeeded.
 
 - Then we turn that Http response indicator into a more generic Maybe value so it's easier to deal with. from now on we'll be wrapping most of our operations with U.map so they'll happen to whatever is inside the Maybe, and failures will propagate cleanly.
 
 - Then we run the JSON parser and get an abstract syntax tree from the string.
 
-- Then we convert the JSON value into an array of Lake objects.
+- Then we convert the JSON value into a list of Lake objects.
 
-- Then we do a bunch of things at once. We shuffle the list of lakes, we throw away the random number generator from the shuffle, we drop whatever's before a starting position we defined somewhere else in the file, and then we convert the lakes into tweets (with toGeoUpdate) containing the lakes' locations with toGeoUpdate.
+- Then we do a bunch of things at once. We shuffle the list of lakes, we throw away the random number generator from the shuffle, we drop whatever's before a starting position we defined somewhere else in the file (in case we want to continue tweeting from some specific lake), and then we convert the lakes into tweets (with toGeoUpdate) containing the lakes' locations with toGeoUpdate.
 
 - Then if the Maybe is actually Nothing, like if the HTTP request failed or if the JSON didn't parse or something, we replace the Nothing with an empty list of tweets, and if it is Something then we just pull it out, so it's a signal of a list instead of a signal of a maybe list.
 
-At this point, we have a Signal of a list of GeoUpdates.
+At this point, right after extract,  we have a Signal of a list of GeoUpdates. It doesn't map well onto our Twitter feed.
 
-- Finally we do something I call spool: we use a different signal, one that ticks every 3 hours, and we spool out the list of tweets using that ticker so that we get one tweet every 3 hours.
+- Finally we do something I call spool: we use a different signal, one that ticks every 3 hours, and we spool out the list of tweets using that ticker> every 3 hours the signal will take on a new value form the list, so that we get one lake every 3 hours.
 
+* 32 A more complex bot: @EveryMNLake
 And then that Signal, tweeting one random lake every  3 hours, is the value of updates, and
 that's what the bot tweets.
 
@@ -178,30 +187,45 @@ Thus far, we've only seen bots that tweet things out of nothing. We haven't seen
 
 We've mapped and folded over Elm's built-in signals and turned them into Twitter bots, but we haven't mapped and folded over existing *Twitter* feeds to make a Twitter bot.
 
-* Combinators
+* 33 Combinators
 So let's introduce a new interface for reading other people's Twitter feeds.
 
 I've introduced this type Tweet, which contains a status, date posted, number of times favorited, atttached images, and so on and so forth, which we get from Twitter. It represents a tweet an account has already posted (as opposed to StatusUpdate which is something we are going to post).
 
-And this type Signal (Maybe Tweet) which represents an entire Twitter feed of an account from the time we start the program, on. The value inside the signal at some time is the account's latest tweet at that time.
+And this type Signal (Maybe Tweet) which represents an entire Twitter feed of an account from the time we start the program, on. The value inside the signal at some time is an account's latest tweet at that time.
 
 You may be wondering why we need this Maybe in there. 
 
-The answer is in another quirk of Elm's model. Signals need to be defined at all times from the beginning of the program on. When we start our program, we may want to listen to a Twitter account that hasn't tweeted yet, for instance. Then at time 0, there will be nothing in that Signal. We want to represent that in the type, so we make it a Signal of Maybe Tweets -- someone's latest tweet could be nothing, or it could be a tweet.
+The answer is in another part of Elm's model. Signals need to be defined at all times from the beginning of the program on. When we start our program, we may want to listen to a Twitter account that hasn't tweeted yet, for instance. Then at time 0, there will be nothing in that Signal. We want to represent that in the type, so we make it a Signal of Maybe Tweets -- someone's latest tweet could be nothing, or it could be a tweet.
 
-* Combinators
+* 34 Combinators
 And then it's pretty straightforward to build map and filter and fold and so on out of Elm's built-in signal transformation functions and some helpers to deal with the Maybe and the tweet context and turning tweets into status updates.
 
-One example of what we can do with this system.
+Let me give you some examples of what we can do with this system.
 
-* Combinators: x and 2x
-We'll start with map.
+* 35 Combinators: x and 2x
+We'll start with map. We will map the doubling function -- two times x -- over our counter from before, so now we have this even counter. You can see the Twitter feed of the original counter on the left and the even counter on the right.
 
+THere's some ugliness here because we have to deal with the undefined case, like what is inside our Two Times signal if the other Counter hasn't tweeted -- in this case, zero -- and we have to deal with turning strings into ints and back. but you can see the core idea here, that we're mapping a function over the twitter feed to get a new twitter feed.
 
-* Combinators: x y -> (x, y)
-And now fold.
+* 36 Combinators: x y -> (x, y)
+And now zip. We take our Counter and even Counter from before and we zip them together.
 
-* Thanks!
+Something interesting: notice that we get some weird pairs! The pace of each of the three feeds is slightly mismatched.
+
+CounterZipBot just looks every two minutes or so at ... It's running at its own pace.
+
+* 37 Combinators: x acc -> x + acc
+Finally, fold. Elm has a built-in function called foldp which lets you do a continuing fold over a Signal, so you can remember some state.
+
+* 37 Combinators: x acc -> x + acc
+We're just using that here.
+
+Point to pluses.
+
+* 38 Problems
+
+* 39 Thanks!
 That's all! The library is up on GitHub, and I've just updated it with the latest changes. It might be a bit buggy, so feel free to reach out to me.
 
 I wrote an initial blog post about it a few months ago; after the conference I'll be putting the slides online and writing about some of the more advanced things I showed.
