@@ -105,12 +105,12 @@ July 22, 2014 at LambdaJam Chicago
 # Twitter feeds are like Signals!
 
 - Represent an individual tweet as a value of type<br>
-`StatusUpdate {}`
+`StatusUpdate a`
 
 --
 
 - Then we'll represent a Twitter feed as<br>
-`Signal (StatusUpdate {})`
+`Signal (StatusUpdate a)`
 
 ---
 
@@ -181,6 +181,9 @@ port updates : Signal (BH.StatusUpdate {})
 <h1 class="smaller">Transforming <code>count (every second)</code>:<br>counting to tweets</h1>
 
 - Now we want to turn those counts from `count (every second)` into tweets.
+
+--
+
 - First, lift the `show` function to turn the counts into Strings:
 
 ```scala
@@ -194,12 +197,13 @@ lift show : Signal a -> Signal String
 <h1 class="smaller">Transforming <code>count (every second)</code>:<br>counting to tweets</h1>
 
 - Now we want to turn those counts from `count (every second)` into tweets.
+
 - Then, lift the `update` function from the Birdhouse library:
 
 ```scala
 update : String -> StatusUpdate {}
 
-lift update : Signal String -> StatusUpdate {}
+lift update : Signal String -> Signal (StatusUpdate {})
 ```
 
 ---
@@ -286,16 +290,16 @@ port updates = lakesJsonSigResp              <span class="hljs-literal">Http.Suc
   <span class="hljs-annotation">: Signal (Http.Response String)</span>
   |> lift U.respToMaybe                      <span class="hljs-literal">Just "[{\"county\":\"Douglas\",\"si..."</span>
   <span class="hljs-annotation">: Signal (Maybe String)</span>
-  |> lift (U.concatMap Json.fromString)      <span class="hljs-literal">Just (Json.Array [Json.Object {"county": "Do.."}])</span>
+  |> lift (U.concatMap Json.fromString)      <span class="hljs-literal">Just (Json.Array [Json.Object {"county": "D..."}, ...])</span>
   <span class="hljs-annotation">: Signal (Maybe Json.Value)</span>
-  |> lift (U.map toLakes)                    <span class="hljs-literal">Just [{ name = "Aaron", loc = { lat = 46.07... } }]</span>
+  |> lift (U.map toLakes)                    <span class="hljs-literal">Just [{ name = "Aaron", loc = { lat = ... }}, ...]</span>
   <span class="hljs-annotation">: Signal (Maybe [Lake])</span>
   |> lift (U.map <| map toGeoUpdate . drop pos . fst .
-                    PureRandom.shuffle seed) <span class="hljs-literal">Just [{ status = "Lake Elbow", lat = 49.29... }]</span>
+                    PureRandom.shuffle seed) <span class="hljs-literal">Just [{ status = "Lake Elbow", lat = ... }, ...]</span>
   <span class="hljs-annotation">: Signal (Maybe [GeoUpdate (StatusUpdate {})])</span>
-  |> U.extract []                            <span class="hljs-literal">[{ status = "Lake Elbow", lat = 49.29... }]</span>
+  |> U.extract []                            <span class="hljs-literal">[{ status = "Lake Elbow", lat = ... }, ...]</span>
   <span class="hljs-annotation">: Signal [GeoUpdate (StatusUpdate {})]</span>
-  |> U.spool (every <| 3 * hour)             <span class="hljs-literal">{ status = "Lake Elbow", lat = 49.29... }</span>
+  |> U.spool (every <| 3 * hour)             <span class="hljs-literal">{ status = "Lake Elbow", lat = ... }</span>
   <span class="hljs-annotation">: Signal (GeoUpdate (StatusUpdate {}))</span>
 </pre>
 
@@ -317,21 +321,60 @@ port updates = lakesJsonSigResp              <span class="hljs-literal">Http.Suc
 - Other people's Twitter feeds:<br>
 `Signal (Maybe Tweet)`
 
----
+--
 
-# Combinators
-
-TWITTER
-
-COUNTER1    COUNTER2
+- Map:<br>
+`(String -> String) -> Signal (Maybe (StatusUpdate {}))`<br>
+`-> Signal (Maybe (StatusUpdate {}))`
 
 ---
 
-# Combinators
+# Combinators: x -> 2 * x
 
-TWITTER
+```scala
+port updates = BH.map (\s -> show <| maybe 0 (\x -> x * 2) <| String.toInt s)
+               <| BH.toUpdates counter
+```
 
-EVERY COLOR     EVERY NAMED COLOR
+<div class="left-column">
+<iframe scrolling="no" src="embeds/CounterElm.html"></iframe>
+</div>
+
+<div class="right-column">
+<iframe scrolling="no" src="embeds/CounterTimesTwo.html"></iframe>
+</div>
+
+---
+
+# Combinators: x y -> (x, y)
+
+<table class="three-column">
+<tr>
+<td>
+<iframe scrolling="no" src="embeds/CounterElm.html"></iframe>
+</td>
+
+<td>
+<iframe scrolling="no" src="embeds/CounterTimesTwo.html"></iframe>
+</td>
+
+<td>
+<iframe scrolling="no" src="embeds/CounterZip.html"></iframe>
+</td>
+</tr>
+</table>
+
+---
+
+# Combinators: x acc -> x + acc
+
+<div class="left-column">
+<iframe scrolling="no" src="embeds/CounterElm.html"></iframe>
+</div>
+
+<div class="right-column">
+<iframe scrolling="no" src="embeds/CounterFold.html"></iframe>
+</div>
 
 ---
 
@@ -403,6 +446,25 @@ EVERY COLOR     EVERY NAMED COLOR
         margin-top: 20px;
         transform: scale(1.3);
       }
+
+      .left-column iframe, .right-column iframe, td iframe {
+        border: 0;
+        height: 400px;
+        overflow: hidden;
+      }
+
+      .three-column td {
+        max-height: 400px;
+        overflow: hidden;
+      }
+      .left-column, .right-column {
+        max-height: 400px;
+        width: 450px;
+        overflow: hidden;
+      }
+
+      .left-column { float: left; }
+      .right-column { float: right; }
     </style>
 
     <script src="build/MousePosition.js"></script>
