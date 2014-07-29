@@ -346,6 +346,33 @@ port updates = BH.map (\s -> show <| maybe 0 (\x -> x * 2) <| String.toInt s)
 
 ---
 
+# Combinators: x  -> 2 * x
+
+```scala
+module Bot where
+
+import Utils as U
+import String
+import Maybe
+import Birdhouse as BH
+
+port getTweetsFrom : Signal [BH.ScreenName]
+port getTweetsFrom = sampleOn (every (2 * minute)) <| constant ["CounterElm"]
+
+port tweets : Signal (Maybe (BH.ScreenName, BH.Tweet))
+
+counter : Signal (Maybe BH.Tweet)
+counter = tweets `BH.newFromUser` "CounterElm"
+
+port updates : Signal (Maybe { status : String })
+port updates = BH.map (\s -> show <| maybe 0 (\x -> x * 2) <| String.toInt s)
+               <| BH.toUpdates counter
+
+main = BH.previewStreamM updates
+```
+
+---
+
 # Combinators: x y -> (x, y)
 
 ```scala
@@ -376,6 +403,12 @@ port updates = (\mc mctt ->
 
 # Combinators: x acc -> x + acc
 
+.center[<img style="max-width: 1000px; width: 1000px;" src="images/foldp.png"></img>]
+
+---
+
+# Combinators: x acc -> x + acc
+
 ```scala
 port updates = lift (BH.update . show)
                <| BH.fold (\s acc -> maybe 0 (\x -> x + acc) <| String.toInt s) 0
@@ -392,9 +425,26 @@ port updates = lift (BH.update . show)
 
 ---
 
+# Problems
+
+- Initial value needs to be defined, forcing us to strew `Maybe` everywhere
+
+- No way to introduce static data at start of program without making HTTP request (a Signal)
+
+- Twitter doesn't push events to us, we have to poll
+
+- Type alias problems in ports
+
+- Difficult to test!
+
+---
+
 # Thanks!
 
-- @rsnous
+- Omar Rizwan (@rsnous)
+
+- http://rsnous.com
+
 - https://github.com/osnr/Birdhouse
 
     </textarea>
@@ -479,6 +529,8 @@ port updates = lift (BH.update . show)
 
       .left-column { float: left; }
       .right-column { float: right; }
+
+      .foldp { max-width: 1000px }
     </style>
 
     <script src="build/MousePosition.js"></script>

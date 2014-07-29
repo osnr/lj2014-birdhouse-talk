@@ -192,40 +192,68 @@ So let's introduce a new interface for reading other people's Twitter feeds.
 
 I've introduced this type Tweet, which contains a status, date posted, number of times favorited, atttached images, and so on and so forth, which we get from Twitter. It represents a tweet an account has already posted (as opposed to StatusUpdate which is something we are going to post).
 
+* 34 Combinators
 And this type Signal (Maybe Tweet) which represents an entire Twitter feed of an account from the time we start the program, on. The value inside the signal at some time is an account's latest tweet at that time.
 
 You may be wondering why we need this Maybe in there. 
 
 The answer is in another part of Elm's model. Signals need to be defined at all times from the beginning of the program on. When we start our program, we may want to listen to a Twitter account that hasn't tweeted yet, for instance. Then at time 0, there will be nothing in that Signal. We want to represent that in the type, so we make it a Signal of Maybe Tweets -- someone's latest tweet could be nothing, or it could be a tweet.
 
-* 34 Combinators
+* 35 Combinators
 And then it's pretty straightforward to build map and filter and fold and so on out of Elm's built-in signal transformation functions and some helpers to deal with the Maybe and the tweet context and turning tweets into status updates.
 
 Let me give you some examples of what we can do with this system.
 
-* 35 Combinators: x and 2x
+* 36 Combinators: x and 2x
 We'll start with map. We will map the doubling function -- two times x -- over our counter from before, so now we have this even counter. You can see the Twitter feed of the original counter on the left and the even counter on the right.
+
+* 37 Combinators: x and 2x
+Here's the full code.
+
+There's some interesting details and complexity here. 
+
+First, we have both incoming and outgoing signals. Before we get incoming tweets through tweets, we have to tell the library whose feeds we want to listen to.
+
+So to read this, we actually want to look at getTweetsFrom first. At the moment, the library uses a polling model rather than a push model.
+
+getTweetsFrom determines two things: it determines what feeds we're going to get tweets from, and it determines at what pace we're polling for tweets. This here says, every two minutes, I want to get the latest tweet from CounterElm.
+
+And then that comes in over tweets,
+and then we have this signal counter which filters it for just tweets we haven't seen yet (from CounterELm). So 'counter' refers to the Twitter feed of CounterElm, basically.
+
+And then we essentially map (*2) over counter to get updates, and that gets tweeted out. (back and forth)
 
 THere's some ugliness here because we have to deal with the undefined case, like what is inside our Two Times signal if the other Counter hasn't tweeted -- in this case, zero -- and we have to deal with turning strings into ints and back. but you can see the core idea here, that we're mapping a function over the twitter feed to get a new twitter feed.
 
-* 36 Combinators: x y -> (x, y)
+* 38 Combinators: x y -> (x, y)
 And now zip. We take our Counter and even Counter from before and we zip them together.
 
 Something interesting: notice that we get some weird pairs! The pace of each of the three feeds is slightly mismatched.
 
 CounterZipBot just looks every two minutes or so at ... It's running at its own pace.
 
-* 37 Combinators: x acc -> x + acc
+* 39 Combinators: x acc -> x + acc
 Finally, fold. Elm has a built-in function called foldp which lets you do a continuing fold over a Signal, so you can remember some state.
 
-* 37 Combinators: x acc -> x + acc
+* 40 Combinators: x acc -> x + acc
 We're just using that here.
 
 Point to pluses.
 
-* 38 Problems
+* 41 Problems
+There are a few problems that I've mentioned which are worth putting up explicitly.
 
-* 39 Thanks!
+The requirement that Signals always have a defined value forces us to strew Maybe everywhere, and in turn that encourages us to wrap around the built-in Signal functions to get rid of the Maybe. I don't really know a good way around this.
+
+We don't have a good way of making our tweets dependent on static data without a lot of fiddling around with Signals and spooling.
+
+Twitter's streaming API isn't well-supported from JavaScript. This is because of some cross-site stuff; even to use just the parts we're using, we have to rely on an API proxy to do it on the client side. i'm sure it's possible to write a proxy for their streaming API, but for now I have to poll explicitly, and that leads to some of the strange pacing issues we saw earlier.
+
+Ports have some problems dealing with generic values; I actually am using the development version of Elm to get around some of those. In the current released version, you can't use type aliases (or named record types) at all, so you need to list all the fields your port has explicitly, which is incredibly annoying for things like tweets with a lot of fields. But even now, you usually need to be explicit about your types, and you can't make them very abstract.
+
+It's hard to test! Making Twitter accounts is difficult, setting up a bot and getting API keys is hard (you need to register your phone), the API has rate limits, and making an Elm bot persistent requires you to fiddle around a lot with headless browsers and whatever.
+
+* 42 Thanks!
 That's all! The library is up on GitHub, and I've just updated it with the latest changes. It might be a bit buggy, so feel free to reach out to me.
 
 I wrote an initial blog post about it a few months ago; after the conference I'll be putting the slides online and writing about some of the more advanced things I showed.
